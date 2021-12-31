@@ -113,6 +113,9 @@
 <script>
 import helpersMixin from '../utils/mixin'
 import {generateSeedWords, validateWords} from 'nostr-tools/nip06'
+import {wordlist} from 'micro-bip39/wordlists/english'
+import {entropyToMnemonic} from 'micro-bip39'
+import createHash from 'create-hash'
 
 export default {
   name: 'MainLayout',
@@ -148,7 +151,23 @@ export default {
 
   methods: {
     generate() {
-      this.key = generateSeedWords()
+      if (window.webln) {
+        window.webln.enable().then(() => {
+          window.webln.signMessage('nostr').then((response) => {
+            let hash = createHash('sha256')
+              .update(response.signature)
+              .digest()
+            this.key = entropyToMnemonic(hash, wordlist)
+            this.proceed()
+            // no need to show the keys
+            this.$router.push({
+              name: 'settings'
+            })
+          })
+        })
+      } else {
+        this.key = generateSeedWords()
+      }
     },
 
     proceed() {
